@@ -1,0 +1,7 @@
+name = 410 Gone Or 404
+description = Allows people to deal with unwanted URLs.
+backdrop = 1.x
+configure = admin/config/urls/gone-410
+tags[] = URL handling
+version = 1.0.1
+

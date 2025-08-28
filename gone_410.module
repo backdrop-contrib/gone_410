@@ -1,0 +1,104 @@
+<?php
+/**
+ * Implements hook_config_info().
+ */
+function gone_410_config_info() {
+  $prefixes['gone_410.settings'] = array(
+    'label' => t('410 Gone'),
+    'group' => t('Configuration'),
+  );
+  return $prefixes;
+}
+
+/**
+ * Implements hook_permission().
+ *
+ */
+function gone_410_permission() {
+  return array(
+    'gone_410 settings' => array(
+      'title' => t('Manage "410 Gone" Responses')
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ *
+ */
+function gone_410_menu() {
+  $items = array();
+  $items['admin/config/urls/gone-410'] = array(
+    'type' => MENU_NORMAL_ITEM,
+    'title' => t('410 Gone Or 404 Not Found'),
+    'page callback' => 'gone_410',
+    'file' => 'gone_410.admin.inc',
+    'access arguments' => array('gone_410 settings'),
+  );
+  $items['admin/config/urls/gone-410/remove/%'] = array(
+    'title' => t('Remove URL path from "410 Gone" list'),
+    'page callback' => 'backdrop_get_form',
+    'page arguments' => array('gone_410_remove_from_list', 5),
+    'access arguments' => array('gone_410 settings'),
+    'file' => 'gone_410.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Check if requested path contain registered pattern.
+ * @param string $path
+ * @return
+ */
+function gone_410_path_match($path = '') {
+  $match    = FALSE;
+  $url_path_id = 0;
+  $return_404 = 0;
+  $patterns = db_select('gone_410', 'g')
+    ->fields('g', array('url_path_id', 'url_path', 'return_404'))
+    ->execute()
+    ->fetchAllAssoc('url_path_id');
+
+  foreach ($patterns as $current_id=>$pattern) {
+    if (is_string($pattern->url_path) && strpos(strtolower($path), $pattern->url_path) !== FALSE) {
+      $match = TRUE;
+      $url_path_id = (int) $current_id;
+      $return_404 = (int) $pattern->return_404;
+      break;
+    }
+  }
+
+  return array($match, $url_path_id, $return_404);
+}
+
+function gone_410_action($url_path_id, $return_404) {
+  if ($return_404) {
+    header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
+  }
+  else {
+    header($_SERVER['SERVER_PROTOCOL'] . ' 410 Gone');
+  }
+
+  $now = time();
+  db_query("UPDATE {gone_410}
+    SET count = count + 1,
+    last_request = $now
+    WHERE url_path_id = :url_path_id", array(':url_path_id' => $url_path_id));
+}
+
+/**
+ * Implements hook_boot().
+ *
+ */
+function gone_410_boot() {
+  global $user;
+  if (!$user->uid) {
+    $request_uri = isset($_SERVER['REQUEST_URI']) ? htmlspecialchars($_SERVER['REQUEST_URI']) : '';
+    $check = gone_410_path_match($request_uri);
+    if ($check[0]) {
+      gone_410_action($check[1], $check[2]);
+      exit();
+    }
+  }
+}

@@ -1,0 +1,63 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function gone_410_schema() {
+  $schema = array();
+
+  $schema['gone_410'] = array(
+    'description' => 'Stores URL paths to set them gone.',
+    'fields' => array(
+      'url_path_id' => array(
+        'description' => 'Primary Key: unique ID for URL path.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'url_path' => array(
+        'description' => 'URL path to set gone.',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+      'return_404' => array(
+        'description' => 'Return 404 instead 410.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'count' => array(
+        'description' => 'Count of requests.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'inserted' => array(
+        'description' => 'Unix timestamp of when the URL path was inserted.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'last_request' => array(
+        'description' => 'Unix timestamp of when the URL path was last requested.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'url_path' => array('url_path'),
+    ),
+    'primary key' => array('url_path_id'),
+  );
+
+  return $schema;
+}
